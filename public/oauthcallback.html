@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth Callback</title>
+</head>
+<body>
+  <script>
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = fragment.get('access_token');
+    const instanceUrl = fragment.get('instance_url');
+
+    if (accessToken && instanceUrl) {
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('instance_url', instanceUrl);
+      window.location.href = '/';
+    } else {
+      document.body.innerText = 'OAuth failed or token missing.';
+    }
+  </script>
+</body>
+</html>

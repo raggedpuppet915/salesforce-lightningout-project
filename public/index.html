@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lightning Out - Flow Renderer</title>
+  </head>
+  <body>
+    <h1>Render Flow Using Lightning Out</h1>
+    <div id="lightning"></div>
+
+    <!-- Load Lightning Out script -->
+    <script src="https://iqss5-dev-ed.develop.lightning.force.com/lightning/lightning.out.js"></script>
+
+    <script>
+      window.addEventListener('load', function () {
+        console.log('Window load event triggered');
+
+        const accessToken = localStorage.getItem('access_token');
+        let instanceUrl = localStorage.getItem('instance_url');
+
+        // Patch: convert .my.salesforce.com to .lightning.force.com
+        if (instanceUrl && instanceUrl.includes('.my.salesforce.com')) {
+          instanceUrl = instanceUrl.replace('.my.salesforce.com', '.lightning.force.com');
+          console.log('Converted instance URL to Lightning domain:', instanceUrl);
+        }
+
+        console.log('Using instance URL:', instanceUrl);
+        console.log('Has access token:', accessToken);
+
+        if (!accessToken || !instanceUrl) {
+          console.error('Missing token or instance URL');
+          document.body.innerHTML = 'Missing authentication. Please log in first.';
+          return;
+        }
+
+        let attempt = 0;
+        const maxAttempts = 10;
+        const retryDelay = 2000; // 2 seconds
+
+        function tryLoadComponent() {
+          console.log(`Attempt ${attempt + 1} to load Lightning component...`);
+
+          try {
+            $Lightning.use("c:FlowHostApp",
+              function () {
+                console.log('$Lightning.use callback fired');
+
+                $Lightning.createComponent("c:FlowHost", {}, "lightning",
+                  function (cmp) {
+                    if (cmp) {
+                      console.log('Component created successfully:', cmp);
+                    } else {
+                      console.error('Component creation returned null, retrying...');
+                      scheduleRetry();
+                    }
+                  }
+                );
+              },
+              instanceUrl,
+              accessToken
+            );
+          } catch (e) {
+            console.error('Error during $Lightning.use or component creation:', e);
+            scheduleRetry();
+          }
+        }
+
+        function scheduleRetry() {
+          attempt++;
+          if (attempt < maxAttempts) {
+            console.log(`Retrying in ${retryDelay}ms...`);
+            setTimeout(tryLoadComponent, retryDelay);
+          } else {
+            console.error('Max retries reached. Component could not be loaded.');
+          }
+        }
+
+        // Initial 5-second delay
+        console.log('Waiting 5 seconds before first attempt...');
+        setTimeout(tryLoadComponent, 5000);
+      });
+    </script>
+  </body>
+</html>
